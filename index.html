@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VeaCrossing: Elantris Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#3a2f25;
+    --gold:#e8b54a;
+    --gold-soft:#f4d98a;
+    --parchment:#efe6d2;
+    --parchment-dark:#d9cbac;
+    --shadow:rgba(40,30,15,.45);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(120% 120% at 50% 0%, #6b6248 0%, #4b4636 60%, #322f24 100%);
+    font-family:"Cormorant Garamond", Georgia, serif;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 14px 60px;
+  }
+
+  .page-title{
+    font-family:"Caveat", cursive;
+    color:var(--parchment);
+    font-size:clamp(28px,5vw,52px);
+    letter-spacing:.5px;
+    margin:6px 0 2px;
+    text-shadow:0 2px 6px rgba(0,0,0,.4);
+  }
+  .page-sub{
+    color:#cfc6ad;
+    font-family:"Caveat", cursive;
+    font-size:clamp(18px,2.4vw,28px);
+    letter-spacing:.5px;
+    margin-bottom:18px;
+    opacity:.9;
+  }
+  .page-sub a{
+    color:#cfc6ad;
+    text-decoration:none;
+  }
+  .page-sub a:hover{ text-decoration:underline; }
+
+  /* Map frame and image */
+  .map-wrap{
+    position:relative;
+    width:min(96vw, 1200px);
+    border-radius:6px;
+    overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.5), 0 0 0 8px rgba(60,50,30,.6), 0 0 0 10px rgba(120,105,70,.5);
+    background:#cabf9f;
+  }
+  .map-img{
+    display:block;
+    width:100%;
+    height:auto;
+    user-select:none;
+    -webkit-user-drag:none;
+  }
+
+  /* Artist credit, sits inside the map at the lower right near the signature */
+  .art-credit{
+    position:absolute;
+    right:6%;
+    bottom:1.5%;
+    z-index:5;
+    text-align:right;
+    line-height:1.1;
+    color:#3a2f25;
+    opacity:.72;
+    pointer-events:none; /* let clicks pass through, except the link below */
+  }
+.art-credit .handle{
+    display:block;
+    font-family:"Caveat", cursive;
+    font-size:clamp(14px,1.7vw,21px);
+    color:#3a2f25;
+    text-decoration:none;
+    pointer-events:auto; /* the handle stays clickable */
+  }
+  .art-credit .handle:hover{ text-decoration:underline; }
+
+  /* Area name label on hover */
+  .hover-label{
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    font-family:"Caveat",cursive;
+    font-size:clamp(13px,1.6vw,20px);
+    color:var(--parchment);
+    background:rgba(30,25,15,.72);
+    padding:3px 12px;
+    border-radius:20px;
+    border:1px solid rgba(232,181,74,.45);
+    white-space:nowrap;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .2s ease;
+    z-index:4;
+  }
+  body:not(.align-mode) .hotspot:hover .hover-label{ opacity:1; }
+
+  /* Clickable areas */
+  .hotspot{
+    position:absolute;
+    border-radius:8px;
+    cursor:pointer;
+    z-index:3;
+    /* idle: nearly invisible, just a faint hint ring */
+    box-shadow:inset 0 0 0 0 rgba(232,181,74,0);
+    transition:box-shadow .35s ease, background .35s ease;
+    background:radial-gradient(closest-side, rgba(255,255,255,0) 60%, rgba(255,255,255,0) 100%);
+  }
+  /* Show areas button: reveal area names */
+  body.show-areas .hotspot .hover-label{ opacity:1; }
+  /* Hover: sparkles only, no rectangle. (The stars are added by the script.) */
+  .hotspot:hover{
+    background:transparent;
+    box-shadow:none;
+  }
+
+  /* sparkles injected on hover */
+  .spark{
+    position:absolute;
+    width:18px;height:18px;
+    margin:-9px 0 0 -9px;
+    pointer-events:none;
+    z-index:4;
+    animation:twinkle 900ms ease-out forwards;
+  }
+  @keyframes twinkle{
+    0%{transform:scale(.2) rotate(0deg);opacity:0}
+    30%{opacity:1}
+    100%{transform:scale(1.1) rotate(45deg);opacity:0}
+  }
+
+  /* Align helper */
+  .align-tag{
+    position:absolute;z-index:6;
+    font-family:"Caveat",cursive;font-size:13px;
+    color:#fff;background:rgba(150,30,30,.85);
+    padding:0 5px;border-radius:3px;white-space:nowrap;
+    transform:translate(-50%,-50%);pointer-events:none;display:none;
+  }
+  body.align-mode .hotspot{box-shadow:inset 0 0 0 2px rgba(220,40,40,.9);background:rgba(220,40,40,.12)}
+  body.align-mode .align-tag{display:block}
+  #coordReadout{
+    position:fixed;left:14px;bottom:14px;z-index:50;
+    background:rgba(30,25,18,.92);color:var(--gold-soft);
+    font-family:ui-monospace,Menlo,monospace;font-size:13px;
+    padding:8px 12px;border-radius:8px;display:none;border:1px solid rgba(232,181,74,.4);
+  }
+  body.align-mode #coordReadout{display:block}
+
+  /* Controls */
+  .controls{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btn{
+    font-family:"Cormorant Garamond",serif;font-size:16px;
+    color:var(--parchment);background:rgba(60,50,30,.55);
+    border:1px solid rgba(232,181,74,.5);padding:7px 16px;border-radius:30px;
+    cursor:pointer;letter-spacing:.5px;transition:.2s;
+  }
+  .btn:hover{background:rgba(232,181,74,.25);color:#fff}
+  .hint{color:#cfc6ad;font-size:13px;margin-top:10px;text-align:center;opacity:.8;max-width:560px}
+
+  /* Modal */
+  .modal{
+    position:fixed;inset:0;z-index:100;display:none;
+    align-items:center;justify-content:center;
+    background:rgba(25,20,12,.82);backdrop-filter:blur(3px);padding:20px;
+  }
+  .modal.open{display:flex;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .card{
+    width:min(92vw,860px);max-height:88vh;overflow:hidden;
+    background:linear-gradient(180deg,#f3ead6,#e6d8ba);
+    border-radius:10px;box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 6px rgba(120,105,70,.5);
+    display:flex;flex-direction:column;
+  }
+  .card-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;border-bottom:1px solid rgba(120,90,40,.25);
+  }
+  .card-head h2{
+    margin:0;font-family:"Caveat",cursive;font-weight:600;
+    font-size:clamp(24px,4vw,36px);color:var(--ink);
+  }
+  .close{
+    border:none;background:rgba(120,90,40,.15);width:38px;height:38px;border-radius:50%;
+    font-size:20px;cursor:pointer;color:var(--ink);line-height:1;
+  }
+  .close:hover{background:rgba(120,90,40,.3)}
+
+  .stage{position:relative;background:#000;display:flex;align-items:center;justify-content:center;min-height:240px}
+  .stage img{max-width:100%;max-height:62vh;display:block}
+  .nav{
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;
+    background:rgba(0,0,0,.45);color:#fff;font-size:22px;
+  }
+  .nav:hover{background:rgba(0,0,0,.7)}
+  .nav.prev{left:12px}
+  .nav.next{right:12px}
+  .counter{
+    position:absolute;bottom:10px;right:14px;color:#fff;font-size:14px;
+    background:rgba(0,0,0,.5);padding:2px 10px;border-radius:20px;letter-spacing:1px;
+  }
+  .thumbs{display:flex;gap:8px;padding:12px;overflow-x:auto}
+  .thumbs img{height:58px;width:78px;object-fit:cover;border-radius:5px;cursor:pointer;opacity:.6;border:2px solid transparent}
+  .thumbs img.active{opacity:1;border-color:var(--gold)}
+
+  /* empty state shown when an area has no photos yet */
+  .empty{
+    padding:36px 24px;text-align:center;color:#6b5a3d;
+  }
+  .empty .big{font-family:"Caveat",cursive;font-size:26px;color:var(--ink);margin-bottom:8px}
+  .empty code{
+    background:rgba(120,90,40,.15);padding:3px 8px;border-radius:5px;
+    font-family:ui-monospace,Menlo,monospace;font-size:13px;color:#5a4a2e;
+  }
+</style>
+</head>
+<body>
+
+  <!--<div class="page-title">Elantris</div>-->
+  <!--<div class="page-sub">DA 7855 7184 8593</div>-->
+
+  <div class="page-sub">An Animal Crossing New Horizons island by <a href="https://instagram.com/veacrossing" target="_blank" rel="noopener">@veacrossing</a></div>
+
+  <div class="map-wrap" id="mapWrap">
+    <img class="map-img" id="mapImg" alt="Elantris Island Map">
+    <div class="art-credit">
+      <a class="handle" href="https://instagram.com/escie.png" target="_blank" rel="noopener">@escie.png</a>
+    </div>
+    <div id="coordReadout">move over the map</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="toggleAreas">Show areas</button>
+  </div>
+  <div class="hint">Hover an area to see it sparkle, then click to open its photos.</div>
+  <!-- <div class="hint">Press the D key to turn on align mode for adjusting positions.</div> -->
+
+  <!-- Photo modal -->
+  <div class="modal" id="modal">
+    <div class="card">
+      <div class="card-head">
+        <h2 id="modalTitle">Area</h2>
+        <button class="close" id="modalClose" aria-label="Close">&times;</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   1. THE MAP IMAGE
+   For GitHub: put your map file in the repo and change MAP_SRC
+   to its filename, for example:
+       const MAP_SRC = "elantris-map.jpg";
+   The long string below is just a compressed copy so this
+   file works on its own while you build.
+   ============================================================ */
+const MAP_SRC = "assets/images/elantris-map.jpg";
+
+/* ============================================================
+   2. YOUR CLICKABLE AREAS
+   Each area has:
+     id     a short name used for the photo folder
+     name   the title shown in the popup
+     x,y    top left corner, as percent of the map
+     w,h    width and height, as percent of the map
+     photos list of photo file names (see note below)
+
+   PHOTOS:
+   Photos live in a folder called  assets/photos/<id>/  next to this file.
+   So for the area with id "nooks-cranny", you would put files in
+       assets/photos/nooks-cranny/
+   and then just list the file names here, for example:
+       photos: ["1.jpg", "2.jpg", "shop-front.jpg"]
+   Leave photos empty for now if you have not added them yet.
+   ============================================================ */
+const AREAS = [
+  { id:"hearthstone",       name:"Hearthstone",         x:4.8,  y:28.3, w:14.3, h:16.0, photos:[] },
+  { id:"valkyrie-realm",    name:"Valkyrie Realm",      x:20.5, y:27.5, w:16.5, h:15.5, photos:[] },
+  { id:"alberta",           name:"Alberta",             x:59.6, y:20.5, w:12.9, h:17.5, photos:[] },
+  { id:"al-de-baran",       name:"Al De Baran",         x:77.0, y:28.0, w:13.0, h:15.0, photos:[] },
+  { id:"dragons-lair",      name:"Dragon's Lair",       x:90.1, y:20.0, w:7.5,  h:17.0, photos:[] },
+  { id:"amatsu",            name:"Amatsu",              x:3.9,  y:43.6, w:19.8, h:16.5, photos:[] },
+  { id:"umbala",            name:"Umbala",              x:63.0, y:38.0, w:14.0, h:16.0, photos:[] },
+  { id:"payon",             name:"Payon",               x:81.3, y:47.4, w:13.6, h:10.5, photos:[] },
+  { id:"poring-fields",     name:"Poring Fields",       x:81.3, y:58, w:13.6, h:19, photos:[] },
+  { id:"prontera-castle",   name:"Prontera Castle",     x:37.0, y:37.0, w:22.0, h:12.5, photos:[] },
+  { id:"prontera-market",   name:"Prontera Market",     x:26.4, y:52.7, w:13.4, h:25.2, photos:[] },
+  { id:"prontera-fountain", name:"Prontera Fountain",   x:39.5, y:50.0, w:11.5, h:16.5, photos:[] },
+  { id:"armory",            name:"Armory",              x:51.0, y:50.4, w:11.0, h:9.6,  photos:[] },
+  { id:"kunlun-gonryun",    name:"Kunlun / Gonryun",    x:63.5, y:54, w:15.4, h:20.8, photos:[] },
+  { id:"niflheim-forest",   name:"Niflheim Forest",     x:6.3,  y:61.6, w:18.9, h:18.5, photos:[] },
+  { id:"izlude",            name:"Izlude",              x:47.0, y:66.3, w:15.8, h:12.8, photos:[] },
+  { id:"brasilis",          name:"Brasilis",            x:24.7, y:80.3, w:14.8, h:11.3, photos:[] },
+  { id:"sograt-desert",     name:"Sograt Desert",       x:48.0, y:80.0, w:14.0, h:11.0, photos:[] },
+  { id:"glast-heim",        name:"Glast Heim",          x:63.5, y:77.0, w:12.5, h:16.0, photos:[] },
+  { id:"comodo",            name:"Comodo",              x:3.3,  y:80.3, w:18.7, h:13.0, photos:[] },
+  { id:"morroc",            name:"Morroc",              x:76.0, y:79, w:19.0, h:16.5, photos:[] },
+];
+
+/* ============================================================
+   3. Build Hotspots
+   ============================================================ */
+const mapImg = document.getElementById("mapImg");
+const mapWrap = document.getElementById("mapWrap");
+mapImg.src = MAP_SRC;
+
+const STAR = `<svg class="spark" viewBox="0 0 24 24"><path d="M12 0c1 6 5 10 12 12-7 2-11 6-12 12-1-6-5-10-12-12C7 10 11 6 12 0z" fill="#f6dd8a"/></svg>`;
+
+// build hotspots
+AREAS.forEach(a=>{
+  const el = document.createElement("div");
+  el.className = "hotspot";
+  el.style.left   = a.x + "%";
+  el.style.top    = a.y + "%";
+  el.style.width  = a.w + "%";
+  el.style.height = a.h + "%";
+  el.title = a.name;
+
+  // hover name label
+  const label = document.createElement("span");
+  label.className = "hover-label";
+  label.textContent = a.name;
+  el.appendChild(label);
+
+  // align label
+  const tag = document.createElement("span");
+  tag.className = "align-tag";
+  tag.textContent = a.name;
+  tag.style.left = (a.x + a.w/2) + "%";
+  tag.style.top  = (a.y + a.h/2) + "%";
+  mapWrap.appendChild(tag);
+
+  // sparkle on hover
+  let timer = null;
+  el.addEventListener("mouseenter", ()=>{
+    if(document.body.classList.contains("align-mode")) return;
+    const spawn = ()=>{
+      const s = document.createElement("div");
+      s.innerHTML = STAR;
+      const star = s.firstChild;
+      star.style.left = (10 + Math.random()*80) + "%";
+      star.style.top  = (10 + Math.random()*80) + "%";
+      const sz = 10 + Math.random()*16;
+      star.style.width = sz+"px"; star.style.height = sz+"px";
+      el.appendChild(star);
+      setTimeout(()=>star.remove(), 900);
+    };
+    spawn(); spawn();
+    timer = setInterval(spawn, 220);
+  });
+  el.addEventListener("mouseleave", ()=>{ clearInterval(timer); });
+
+  el.addEventListener("click", ()=>{
+    if(document.body.classList.contains("align-mode")) return;
+    openArea(a);
+  });
+
+  mapWrap.appendChild(el);
+});
+
+/* ---------- modal gallery ---------- */
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody = document.getElementById("modalBody");
+let current = { photos:[], index:0 };
+
+function photoPath(area, file){ return "assets/photos/" + area.id + "/" + file; }
+
+function openArea(area){
+  modalTitle.textContent = area.name;
+  if(!area.photos || area.photos.length === 0){
+    modalBody.innerHTML = `
+      <div class="empty">
+        <div class="big">No photos yet</div>
+        <p>Drop your photos into this folder, then list the file names in the AREAS section.</p>
+        <p><code>assets/photos/${area.id}/</code></p>
+      </div>`;
+  } else {
+    current = { photos: area.photos.map(f=>photoPath(area,f)), index:0 };
+    renderGallery();
+  }
+  modal.classList.add("open");
+}
+
+function renderGallery(){
+  const list = current.photos;
+  const i = current.index;
+  modalBody.innerHTML = `
+    <div class="stage">
+      ${list.length>1?'<button class="nav prev" id="navPrev">&#8249;</button>':''}
+      <img src="${list[i]}" alt="">
+      ${list.length>1?'<button class="nav next" id="navNext">&#8250;</button>':''}
+      <div class="counter">${i+1} / ${list.length}</div>
+    </div>
+    ${list.length>1?`<div class="thumbs">${list.map((p,k)=>
+        `<img src="${p}" data-k="${k}" class="${k===i?'active':''}" alt="">`).join("")}</div>`:''}
+  `;
+  const prev = document.getElementById("navPrev");
+  const next = document.getElementById("navNext");
+  if(prev) prev.onclick = ()=>{ current.index = (i-1+list.length)%list.length; renderGallery(); };
+  if(next) next.onclick = ()=>{ current.index = (i+1)%list.length; renderGallery(); };
+  modalBody.querySelectorAll(".thumbs img").forEach(t=>{
+    t.onclick = ()=>{ current.index = +t.dataset.k; renderGallery(); };
+  });
+}
+
+function closeModal(){ modal.classList.remove("open"); }
+document.getElementById("modalClose").onclick = closeModal;
+modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape") closeModal();
+  if(modal.classList.contains("open") && current.photos.length>1){
+    if(e.key==="ArrowLeft"){ current.index=(current.index-1+current.photos.length)%current.photos.length; renderGallery(); }
+    if(e.key==="ArrowRight"){ current.index=(current.index+1)%current.photos.length; renderGallery(); }
+  }
+});
+
+/* ---------- show areas toggle ---------- */
+document.getElementById("toggleAreas").onclick = function(){
+  document.body.classList.toggle("show-areas");
+  this.textContent = document.body.classList.contains("show-areas") ? "Hide areas" : "Show areas";
+};
+
+/* ---------- align mode (press D) ----------
+   Shows red outlines and labels. Click anywhere on the map to
+   log the cursor position as percent, so you can place or fix
+   areas easily. Read it in the box at the bottom left. */
+const readout = document.getElementById("coordReadout");
+document.addEventListener("keydown", e=>{
+  if(e.key==="d" || e.key==="D"){
+    if(modal.classList.contains("open")) return;
+    document.body.classList.toggle("align-mode");
+  }
+});
+mapWrap.addEventListener("mousemove", e=>{
+  if(!document.body.classList.contains("align-mode")) return;
+  const r = mapImg.getBoundingClientRect();
+  const px = ((e.clientX - r.left)/r.width*100).toFixed(1);
+  const py = ((e.clientY - r.top)/r.height*100).toFixed(1);
+  readout.textContent = "x: " + px + "   y: " + py;
+});
+mapWrap.addEventListener("click", e=>{
+  if(!document.body.classList.contains("align-mode")) return;
+  const r = mapImg.getBoundingClientRect();
+  const px = ((e.clientX - r.left)/r.width*100).toFixed(1);
+  const py = ((e.clientY - r.top)/r.height*100).toFixed(1);
+  readout.textContent = "clicked  x: " + px + "   y: " + py + "  (copied idea: use as x,y)";
+});
+</script>
+</body>
+</html>
