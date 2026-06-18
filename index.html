@@ -238,6 +238,7 @@
   <!--<div class="page-sub">DA 7855 7184 8593</div>-->
 
   <div class="page-sub">An Animal Crossing New Horizons island by <a href="https://instagram.com/veacrossing" target="_blank" rel="noopener">@veacrossing</a></div>
+  <div class="page-sub" style="font-size:clamp(13px,1.6vw,20px);opacity:.65;margin-top:-12px;">Inspired by Ragnarok Online, World of Warcraft, and Dungeons &amp; Dragons</div>
 
   <div class="map-wrap" id="mapWrap">
     <img class="map-img" id="mapImg" alt="Elantris Island Map">
@@ -273,7 +274,7 @@
    The long string below is just a compressed copy so this
    file works on its own while you build.
    ============================================================ */
-const MAP_SRC = "assets/images/elantris-map.jpg";
+const MAP_SRC = "assets/photos/elantris-map.jpg";
 
 /* ============================================================
    2. YOUR CLICKABLE AREAS
@@ -297,7 +298,7 @@ const AREAS = [
   { id:"valkyrie-realm",    name:"Valkyrie Realm",      x:20.5, y:27.5, w:16.5, h:15.5, photos:[] },
   { id:"alberta",           name:"Alberta",             x:59.6, y:20.5, w:12.9, h:17.5, photos:[] },
   { id:"al-de-baran",       name:"Al De Baran",         x:77.0, y:28.0, w:13.0, h:15.0, photos:[] },
-  { id:"dragons-lair",      name:"Dragon's Lair",       x:90.1, y:20.0, w:7.5,  h:17.0, photos:[] },
+  { id:"dragons-lair",      name:"Dragon's Lair",       x:90.1, y:20.0, w:7.5,  h:17.0, photos:["01.png"] },
   { id:"amatsu",            name:"Amatsu",              x:3.9,  y:43.6, w:19.8, h:16.5, photos:[] },
   { id:"umbala",            name:"Umbala",              x:63.0, y:38.0, w:14.0, h:16.0, photos:[] },
   { id:"payon",             name:"Payon",               x:81.3, y:47.4, w:13.6, h:10.5, photos:[] },
@@ -310,10 +311,10 @@ const AREAS = [
   { id:"niflheim-forest",   name:"Niflheim Forest",     x:6.3,  y:61.6, w:18.9, h:18.5, photos:[] },
   { id:"izlude",            name:"Izlude",              x:47.0, y:66.3, w:15.8, h:12.8, photos:[] },
   { id:"brasilis",          name:"Brasilis",            x:24.7, y:80.3, w:14.8, h:11.3, photos:[] },
-  { id:"sograt-desert",     name:"Sograt Desert",       x:48.0, y:80.0, w:14.0, h:11.0, photos:[] },
+  { id:"sograt-desert",     name:"Sograt Desert",       x:48.0, y:80.0, w:14.0, h:11.0, photos:["01.png"] },
   { id:"glast-heim",        name:"Glast Heim",          x:63.5, y:77.0, w:12.5, h:16.0, photos:[] },
   { id:"comodo",            name:"Comodo",              x:3.3,  y:80.3, w:18.7, h:13.0, photos:[] },
-  { id:"morroc",            name:"Morroc",              x:76.0, y:79, w:19.0, h:16.5, photos:[] },
+  { id:"morroc",            name:"Morroc",              x:76.0, y:79, w:19.0, h:16.5, photos:["01.png","02.png","03.mp4","04.mp4"] },
 ];
 
 /* ============================================================
@@ -401,29 +402,66 @@ function openArea(area){
   modal.classList.add("open");
 }
 
+function isVideo(src){ return src.toLowerCase().endsWith(".mp4"); }
+
+function mediaSlide(src){
+  if(isVideo(src)){
+    return `<video id="activeMedia" src="${src}" autoplay playsinline controls
+              style="max-width:100%;max-height:62vh;display:block;"></video>`;
+  }
+  return `<img id="activeMedia" src="${src}" alt="" style="max-width:100%;max-height:62vh;display:block;">`;
+}
+
+function thumbItem(src, k, active){
+  if(isVideo(src)){
+    return `<div data-k="${k}" class="thumb-item${active?' active':''}"
+              style="position:relative;width:78px;height:58px;flex-shrink:0;cursor:pointer;
+                     border-radius:5px;overflow:hidden;border:2px solid ${active?'var(--gold)':'transparent'};
+                     background:#111;display:flex;align-items:center;justify-content:center;">
+              <video src="${src}" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" muted preload="metadata"></video>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                <div style="width:22px;height:22px;background:rgba(255,255,255,.8);border-radius:50%;
+                            display:flex;align-items:center;justify-content:center;">
+                  <div style="width:0;height:0;border-style:solid;border-width:5px 0 5px 10px;
+                              border-color:transparent transparent transparent #333;margin-left:2px;"></div>
+                </div>
+              </div>
+            </div>`;
+  }
+  return `<img src="${src}" data-k="${k}" class="thumb-item${active?' active':''}"
+               style="height:58px;width:78px;object-fit:cover;border-radius:5px;cursor:pointer;
+                      opacity:${active?1:.6};border:2px solid ${active?'var(--gold)':'transparent'}" alt="">`;
+}
+
+function stopActiveMedia(){
+  const m = document.getElementById("activeMedia");
+  if(m && m.tagName==="VIDEO"){ m.pause(); }
+}
+
 function renderGallery(){
   const list = current.photos;
   const i = current.index;
   modalBody.innerHTML = `
     <div class="stage">
       ${list.length>1?'<button class="nav prev" id="navPrev">&#8249;</button>':''}
-      <img src="${list[i]}" alt="">
+      ${mediaSlide(list[i])}
       ${list.length>1?'<button class="nav next" id="navNext">&#8250;</button>':''}
       <div class="counter">${i+1} / ${list.length}</div>
     </div>
-    ${list.length>1?`<div class="thumbs">${list.map((p,k)=>
-        `<img src="${p}" data-k="${k}" class="${k===i?'active':''}" alt="">`).join("")}</div>`:''}
+    ${list.length>1?`<div class="thumbs" style="display:flex;gap:8px;padding:12px;overflow-x:auto;">
+      ${list.map((p,k)=>thumbItem(p,k,k===i)).join("")}
+    </div>`:''}
   `;
   const prev = document.getElementById("navPrev");
   const next = document.getElementById("navNext");
-  if(prev) prev.onclick = ()=>{ current.index = (i-1+list.length)%list.length; renderGallery(); };
-  if(next) next.onclick = ()=>{ current.index = (i+1)%list.length; renderGallery(); };
-  modalBody.querySelectorAll(".thumbs img").forEach(t=>{
-    t.onclick = ()=>{ current.index = +t.dataset.k; renderGallery(); };
+  if(prev) prev.onclick = ()=>{ stopActiveMedia(); current.index=(i-1+list.length)%list.length; renderGallery(); };
+  if(next) next.onclick = ()=>{ stopActiveMedia(); current.index=(i+1)%list.length; renderGallery(); };
+  modalBody.querySelectorAll(".thumb-item").forEach(t=>{
+    t.onclick = ()=>{ stopActiveMedia(); current.index=+t.dataset.k; renderGallery(); };
   });
 }
 
-function closeModal(){ modal.classList.remove("open"); }
+function closeModal(){ stopActiveMedia(); modal.classList.remove("open"); }
 document.getElementById("modalClose").onclick = closeModal;
 modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
 document.addEventListener("keydown", e=>{
